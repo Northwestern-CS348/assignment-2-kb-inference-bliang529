@@ -132,7 +132,6 @@ class KnowledgeBase(object):
         Find fact, and remove it
         Get list of facts/rules it supports
         """
-        supported = False
         matched = None
         if isinstance(fact_or_rule, Fact):
             for fact in self.facts:
