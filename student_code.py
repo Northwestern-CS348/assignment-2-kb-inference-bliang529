@@ -136,14 +136,12 @@ class KnowledgeBase(object):
         if isinstance(fact_or_rule, Fact):
             for fact in self.facts:
                 if fact == fact_or_rule and len(fact.supported_by) == 0: 
-                    #print("MATCHED FACT: ", fact.statement)
                     matched = fact
                     self.facts.remove(fact)
         
         if isinstance(fact_or_rule, Rule):
             for rule in self.rules:
                 if rule == fact_or_rule and not rule.asserted and len(rule.supported_by) == 0: 
-                    #print("MATCHED RULE: ", rule.lhs, rule.rhs)
                     matched = rule
                     self.rules.remove(rule)
 
@@ -174,23 +172,14 @@ class InferenceEngine(object):
         # Student code goes here
         matching_bindings = [match(fact.statement, rule.lhs[0])]
         if not isinstance(matching_bindings[0], bool):
-            #print("\n Fact Statement: ", fact.statement)
-            #print("Rule LHS Statements: ", rule.lhs)
-            #print("Rule RHS Statements: ", rule.rhs)
             merged_statement = instantiate(rule.lhs[0], matching_bindings[0])
-            #print("Merged Statement: ", merged_statement)
-            # If one statement on LHS, statement/rule is inferred
+
             if len(rule.lhs) == 1:
-                #print("RHS (FACT): ", rule.rhs)
                 inferred_statement = instantiate(rule.rhs, matching_bindings[0])  
-                #print("Inferred Statement: ", inferred_statement)              
                 inferred_fact = Fact(inferred_statement, [merged_statement])
                 fact.supports_facts.append(inferred_fact)
-                #for fact_supported_by in fact.supported_by:
-                #    inferred_fact.supported_by.append(fact_supported_by)
                 rule.supports_facts.append(inferred_fact)
                 kb.kb_assert(inferred_fact)
-            # Else, add new rule with dependencies
             else: 
                 inferred_lhs = []
                 for lhs_comp in rule.lhs[1:len(rule.lhs)]:
@@ -202,7 +191,4 @@ class InferenceEngine(object):
                 inferred_rule.asserted = True
                 fact.supports_rules.append(inferred_rule)
                 rule.supports_rules.append(inferred_rule)
-                #print("Inferred multi_LHS LHS: ", inferred_rule.lhs)
-                #print("Inferred multi_LHS RHS: ", inferred_rule.rhs)
-                #print("Rule asserted / supported by: ", inferred_rule.asserted, inferred_rule.supported_by)
                 kb.kb_assert(inferred_rule)
