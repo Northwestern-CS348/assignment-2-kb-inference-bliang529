@@ -109,7 +109,7 @@ class KnowledgeBase(object):
                 binding = match(f.statement, fact.statement)
                 if binding:
                     bindings_lst.add_bindings(binding, [fact])
-
+            
             return bindings_lst if bindings_lst.list_of_bindings else []
 
         else:
@@ -138,21 +138,14 @@ class KnowledgeBase(object):
                 if fact == fact_or_rule and len(fact.supported_by) == 0: 
                     matched = fact
                     self.facts.remove(fact)
-        
-        if isinstance(fact_or_rule, Rule):
-            for rule in self.rules:
-                if rule == fact_or_rule and not rule.asserted and len(rule.supported_by) == 0: 
-                    matched = rule
-                    self.rules.remove(rule)
 
         if not matched == None:
             for supported_fact in matched.supports_facts:
-                supported_fact.supported_by.remove(matched.statement)
-                self.kb_retract(supported_fact)
-                
-            for supported_rule in matched.supports_rules:
-                supported_rule.supported_by.remove(matched.statement)
-                self.kb_retract(supported_rule)
+                for x in range(0, len(supported_fact.supported_by)):
+                    if supported_fact.supported_by[x][0] == matched:
+                        supported_fact.supported_by.pop(x)
+                        self.kb_retract(supported_fact)
+                        break
 
 class InferenceEngine(object):
     def fc_infer(self, fact, rule, kb):
@@ -176,7 +169,15 @@ class InferenceEngine(object):
 
             if len(rule.lhs) == 1:
                 inferred_statement = instantiate(rule.rhs, matching_bindings[0])  
-                inferred_fact = Fact(inferred_statement, [merged_statement])
+                inferred_fact = Fact(inferred_statement, [[fact, rule]])
+                
+                for existing_fact in kb.facts:
+                    if existing_fact.statement == inferred_statement:
+                        fact.supports_facts.append(existing_fact)
+                        rule.supports_facts.append(existing_fact)
+                        existing_fact.supported_by.append([fact, rule])
+                        return
+
                 fact.supports_facts.append(inferred_fact)
                 rule.supports_facts.append(inferred_fact)
                 kb.kb_assert(inferred_fact)
@@ -187,7 +188,7 @@ class InferenceEngine(object):
                     inferred_lhs.append(inferred_lhs_comp)
 
                 inferred_rhs = instantiate(rule.rhs, matching_bindings[0])
-                inferred_rule = Rule([inferred_lhs, inferred_rhs], [merged_statement])
+                inferred_rule = Rule([inferred_lhs, inferred_rhs], [[fact, rule]])
                 inferred_rule.asserted = True
                 fact.supports_rules.append(inferred_rule)
                 rule.supports_rules.append(inferred_rule)
